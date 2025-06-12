@@ -24,6 +24,11 @@ It also shows how to visualize the network's computational graph using
 `torchviz`. Train for a few epochs until you reach about 99% accuracy,
 then capture a screenshot for your records.
 
+Week 2 expands on these basics with a small CNN for CIFAR-10 and a
+learning‑rate/batch‑size sweep logged to TensorBoard. Launch
+`02_dl_core.ipynb` to reproduce the NVIDIA E2E network and compare scalar
+curves from different hyperparameters.
+
 The `study_plan.py` script contains minimal examples for later weeks of
 the study. Set the environment variable `SAMPLE_IMAGE` to an RGB image
 path to test the frame-to-tensor conversion example.

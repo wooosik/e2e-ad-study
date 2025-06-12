@@ -71,6 +71,92 @@ def train_mnist_mlp(epochs: int = 1) -> float:
     print(f"Final MNIST accuracy: {accuracy:.4f}")
     return accuracy
 
+# Week 2 ----------------------------------------------------------------------
+
+class E2ENet(nn.Module):
+    """Simplified NVIDIA end-to-end CNN for CIFAR-10."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.conv = nn.Sequential(
+            nn.Conv2d(3, 24, 5, 2),
+            nn.ReLU(),
+            nn.Conv2d(24, 36, 5, 2),
+            nn.ReLU(),
+            nn.Conv2d(36, 48, 5, 2),
+            nn.ReLU(),
+            nn.Conv2d(48, 64, 3),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3),
+            nn.ReLU(),
+        )
+        self.fc = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(64 * 1 * 1, 100),
+            nn.ReLU(),
+            nn.Linear(100, 50),
+            nn.ReLU(),
+            nn.Linear(50, 10),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.fc(self.conv(x))
+
+
+def train_cifar_cnn(
+    lr: float = 1e-3, batch_size: int = 64, epochs: int = 1, log_dir: str | None = None
+) -> E2ENet:
+    """Train the CNN on CIFAR-10 and optionally log to TensorBoard."""
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    transform = transforms.Compose(
+        [transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))]
+    )
+    train_set = torchvision.datasets.CIFAR10(
+        root="data", train=True, download=True, transform=transform
+    )
+    train_loader = torch.utils.data.DataLoader(
+        train_set, batch_size=batch_size, shuffle=True
+    )
+
+    model = E2ENet().to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    criterion = nn.CrossEntropyLoss()
+
+    writer = None
+    if log_dir:
+        from torch.utils.tensorboard import SummaryWriter
+
+        writer = SummaryWriter(log_dir)
+
+    model.train()
+    step = 0
+    for _ in range(epochs):
+        for data, target in train_loader:
+            data, target = data.to(device), target.to(device)
+            optimizer.zero_grad()
+            output = model(data)
+            loss = criterion(output, target)
+            loss.backward()
+            optimizer.step()
+            if writer:
+                writer.add_scalar("loss", loss.item(), step)
+            step += 1
+
+    if writer:
+        writer.close()
+
+    return model
+
+
+def sweep_cifar_hparams(lrs: list[float], batch_sizes: list[int], epochs: int = 1) -> None:
+    """Run a simple hyperparameter sweep and log each run."""
+
+    for lr in lrs:
+        for bs in batch_sizes:
+            log_dir = f"runs/lr{lr}_bs{bs}"
+            train_cifar_cnn(lr=lr, batch_size=bs, epochs=epochs, log_dir=log_dir)
+
 
 # Week 3 ----------------------------------------------------------------------
 
@@ -109,6 +195,9 @@ def main() -> None:
 
     acc = train_mnist_mlp(epochs=1)
     print(f"Accuracy after 1 epoch: {acc:.4f}")
+
+    # Week 2 example hyperparameter sweep
+    sweep_cifar_hparams(lrs=[1e-3], batch_sizes=[64], epochs=1)
 
     # Week 3 example: convert an image (path required)
     sample_image = os.environ.get("SAMPLE_IMAGE")
