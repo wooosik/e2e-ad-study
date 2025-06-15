@@ -1,0 +1,19 @@
+name: e2e-ad-study
+channels:
+  - pytorch
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - pytorch=2.0
+  - torchvision
+  - torchaudio
+  - cudatoolkit=11.8
+  - jupyter
+  - matplotlib
+  - black
+  - isort
+  - pip:
+      - torchviz
+      - nbstripout
